@@ -1,4 +1,5 @@
 {% extends "auctions/layout.html" %}
+{% load static %}
 
 {% block body %}
     {% if auction.winner is not None %}
@@ -19,12 +20,12 @@
                 <p><b>No bids yet</b></p>
             {% endif %}
             {% if auction.id %}
-           <form method="post" action="{% url 'update_bid' id=auction.id %}">
-               {% csrf_token %}
-               <input type="number" min="{{ auction.amount }}" step="1" max="999999999999" name="bid" required>
-                 <button type="submit">Bid</button>   
-             </form>
-       {% endif %}
+                <form method="post" action="{% url 'update_bid' id=auction.id %}">
+                    {% csrf_token %}
+                    <input type="number" min="{{ auction.amount }}" step="1" max="999999999999" name="bid" required>
+                    <button type="submit">Bid</button>   
+                </form>
+            {% endif %}
         {% endif %}
     </div>
     <div class="main col-lg-10 col-md-9">
@@ -66,24 +67,26 @@
             {% endif %}
             
             <h3 class="text-muted pt-3">Comments:</h3>
-          <form action="{% url 'add_comment' id=auction.id %}" class="form-group" method="POST">
-              {% csrf_token %}
-              {{ form.as_p }}
-             <input class="btn btn-lg btn-outline-secondary" type="submit" value="Add comment">
-        </form>
-        <hr> 
-            {% for comment in comments %}
-                <div class="card mb-3">
-                    <div class="card-header">
-                        <p class="h5 text-muted">{{ comment.user }} - <span class="text-muted lead">{{ comment.created_at }}</span></p>
+            <form action="{% url 'add_comment' id=auction.id %}" class="form-group" method="POST">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <input class="btn btn-lg btn-outline-secondary" type="submit" value="Add comment">
+            </form>
+            <hr> 
+            {% if comments %}
+                {% for comment in comments %}
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <p class="h5 text-muted">{{ comment.user }} - <span class="text-muted lead">{{ comment.created_at }}</span></p>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text lead">{{ comment.text }}</p>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <p class="card-text lead">{{ comment.text }}</p>
-                    </div>
-                </div>
-            {% empty %}
+                {% endfor %}
+            {% else %}
                 <p class="display-4 pb-5 ml-3">No comments for this auction yet.</p> 
-            {% endfor %}
+            {% endif %}
         {% endif %}
     </div>
 {% endblock %}

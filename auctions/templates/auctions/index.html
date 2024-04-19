@@ -18,7 +18,7 @@
                 </a>
                 <br>
                 {% if listing.bid_set.exists %}
-                    {% with listing.bid_set.last as bid %}
+                    {% with listing.bid_set.first as bid %}
                         <p><b>Starting Bid:</b> ${{ bid.auction.startingbid }}</p> 
                         <p><b>Current Bid:</b> ${{ bid.amount }}</p> 
                     {% endwith %}

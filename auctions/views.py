@@ -202,7 +202,7 @@ def add_comment(request, id):
         f = form.cleaned_data
         comment = Comment(
             user=request.user,
-            auction=get_object_or_404(all_listings, id=id),
+            auction=get_object_or_404(all_listings, pk=id),
             **f
         )
         comment.save()
@@ -210,8 +210,16 @@ def add_comment(request, id):
         return HttpResponseRedirect(reverse('listings', kwargs={'id': id}))
     else:
         # Render the form with errors
+        current = get_object_or_404(all_listings, pk=id)
+        bids = Bid.objects.filter(auction=current)
+        bid = None
+        if bids.exists():
+            bid = bids.latest('creation_time')
         return render(request, 'auctions/alllisting.html', {
             'form': form,
+            'auction': current,
+            'user': request.user,
+            'bid': bid,
             'id': id
         })
 # def closing_bid(request,id):
