@@ -1,0 +1,69 @@
+{% extends "auctions/layout.html" %}
+{% load static %}
+
+{% block body %}
+<div class="container">
+    <h2 class="mt-4">Active Listings</h2>
+
+    <ul class="list-group">
+        {% for listing in listing_list %}
+            <li class="list-group-item">
+                <a href="{% url 'listings' id=listing.id %}?next={{ request.path }}">
+                    <strong>{{ listing.title }}</strong><br>
+                    Description: {{ listing.description }}
+                    {% if listing.imageurl %}
+                        <img src="{{ listing.imageurl }}" alt="{{ listing.title }}" class="img-thumbnail"
+                             style="max-width: 240px; max-height: 240px; object-fit: cover;">   
+                    {% endif %}
+                </a>
+                <br>
+                {% if listing.bid_set.exists %}
+                    {% with listing.bid_set.last as bid %}
+                        <p><b>Starting Bid:</b> ${{ bid.auction.startingbid }}</p> 
+                        <p><b>Current Bid:</b> ${{ bid.amount }}</p> 
+                    {% endwith %}
+                {% else %}
+                    <p><b>Starting Bid:</b> ${{ listing.startingbid }}</p> 
+                    <p><b>Current Price:</b> ${{ listing.currentprice }}</p>
+                {% endif %}
+                <p><b>Category:</b> {{ listing.category }}</p>
+
+                {% if request.user.is_authenticated %}
+                <p>User is authenticated</p>
+                <div>
+                    {% if item in request.user.watchlist.all %}
+                       <button id="unwatch-btn-{{ listing.id }}" class="btn btn-danger watchlist-btn"><i class="fa fa-heart"></i> Remove from Watchlist
+                    {% else %}
+                     <a id="add-watch-btn-{{ listing.id }}" href="{% url 'add_watch' id=listing.id %}" class="btn btn-primary watchlist-btn"><i class="far fa-heart"></i> Add to Watchlist</a></button>
+                    {% endif %}
+               </div>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+</div>
+
+<script>
+    // Add event listeners to watchlist buttons
+    document.querySelectorAll('.watchlist-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            // Toggle the 'btn-primary' and 'btn-danger' classes
+            if (this.classList.contains('btn-danger')) {
+                // Button is in the watchlist, change color to blue
+                this.classList.remove('btn-danger');
+                this.classList.add('btn-primary');
+                this.innerHTML = '<i class="far fa-heart"></i> Add to Watchlist';
+            } else {
+                // Button is not in the watchlist, change color to red
+                this.classList.remove('btn-primary');
+                this.classList.add('btn-danger');
+                this.innerHTML = '<i class="fa fa-heart"></i> Remove from Watchlist';
+            }
+        });
+    });
+</script>
+
+{% endblock %}
+
+
+<!-- / -->
