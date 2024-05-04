@@ -1,0 +1,21 @@
+{% extends "auctions/layout.html" %}
+
+{% block body %}
+    <h1>{{ category }}</h1>
+    <ul>
+        {% for listing in listings %}
+        {% if listing.bid_set.exists %}
+        {% with listing.bid_set.first as bid %}
+            <a href="">
+                <img src="{{ listing.imageurl }}" style="width: 240px; height: 240px; object-fit: cover;">
+                <li>{{ listing.title }}</li>
+                <p><b>Current Bid:</b> ${{ bid.amount }}</p>
+                {% endwith %}
+                {% else %}
+                <p><b>Current Price:</b> ${{ listing.currentprice }}</p> 
+                {% endif %}
+            </a>
+             
+        {% endfor %}
+    </ul>
+{% endblock %}

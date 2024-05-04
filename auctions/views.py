@@ -5,19 +5,16 @@ from django.db import IntegrityError
 from django.core.exceptions import ValidationError
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render,get_object_or_404
-
+from django.contrib import messages
 from django.urls import reverse
 from .forms import ListingForm,CommentForm
-
+from django.shortcuts import redirect
 from .models import User,all_listings,Bid,WatchList,Comment
-
-
 
 def index(request):
     listing_list = all_listings.objects.all()
     return render(request, "auctions/index.html", {"listing_list": listing_list})
 
-from django.shortcuts import redirect
 
 def login_view(request):
     if request.method == "POST":
@@ -156,12 +153,11 @@ def update_bid(request, id):
 
 @login_required(login_url='auctions/login.html')
 def watchlist(request):
-    # Fetch the watchlist items for the current user
+    
     try:
         watchlist = WatchList.objects.get(user=request.user)
         watchlist_items = watchlist.watchlist_items.all()
         current_price=all_listings.currentprice
-        # print("Watchlist items:", watchlist_items) 
     except WatchList.DoesNotExist:
         watchlist_items = []
 
@@ -186,7 +182,7 @@ def unwatch(request, id):
         watchlist.watchlist_items.remove(auction)
         watchlist.watchlist_counter -= 1
         watchlist.save()
-    if '/unwatch/' in request.path:
+    if '/unwatch/' in request:
         return HttpResponseRedirect(reverse('index'))
     else:
         return HttpResponseRedirect(reverse('watchlist'))
@@ -194,7 +190,7 @@ def unwatch(request, id):
 def add_comment(request, id):
     if not request.user.is_authenticated:
         return render(request, 'auctions/login.html', {
-            'message': 'Must be logged in to be able to comment!'
+            'message': 'Must be logged in to be able to add or see comments!'
         })
 
     form = CommentForm(request.POST)
@@ -206,24 +202,54 @@ def add_comment(request, id):
             **f
         )
         comment.save()
-        # Redirect to the details page of the auction (listings page)
+
         return HttpResponseRedirect(reverse('listings', kwargs={'id': id}))
     else:
-        # Render the form with errors
         current = get_object_or_404(all_listings, pk=id)
         bids = Bid.objects.filter(auction=current)
         bid = None
         if bids.exists():
             bid = bids.latest('creation_time')
+        comments = Comment.objects.filter(auction=current)
         return render(request, 'auctions/alllisting.html', {
             'form': form,
             'auction': current,
             'user': request.user,
             'bid': bid,
-            'id': id
+            'id': id,
+            'comments':comments 
+
         })
-# def closing_bid(request,id):
-#     auction=get_object_or_404(all_listings, id=id)
-#     auction.active,auction.winner = False, request.user.username
-#     auction.save()
-#     return HttpResponseRedirect(reverse('index'))
+@login_required(login_url='auctions/login.html')
+def seecomments(request, id):
+    auction = get_object_or_404(all_listings, id=id)
+    comments = Comment.objects.filter(auction=auction)
+    return render(request, {'comments': comments})
+
+@login_required(login_url='auctions/login.html')
+def closing_bid(request,id):
+    auction=get_object_or_404(all_listings, id=id)
+    if request.user == auction.user:
+        if auction.active:
+            highest_bid = Bid.objects.filter(auction=auction).order_by('-amount').first()
+            if highest_bid:
+                auction.active = False
+                auction.winner = highest_bid.user.username
+                auction.save()
+                messages.success(request, f"The auction has been successfully closed. The winner is {auction.winner}.")
+            else:
+                messages.error(request, "Cannot close the auction as there are no bids yet.")
+        else:
+            messages.warning(request, "The auction is already closed.")
+    else:
+        messages.error(request, "You are not authorized to close this auction.")
+    return HttpResponseRedirect(reverse('index'))
+    
+
+def category_list(request):
+    categories = all_listings.objects.values_list('category', flat=True).distinct()
+    return render(request, 'auctions/categories.html', {'categories': categories})
+
+def category_detail(request, category):
+    listings = all_listings.objects.filter(category__iexact=category, active=True)
+    return render(request, 'auctions/category_detail.html', {'category': category, 'listings': listings})
