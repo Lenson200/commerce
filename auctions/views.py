@@ -42,6 +42,7 @@ def login_view(request):
 
 
 
+
 def logout_view(request):
     logout(request)
     return HttpResponseRedirect(reverse("index"))
@@ -104,6 +105,7 @@ def adding(request):
 def listings(request, id):
     current = get_object_or_404(all_listings, pk=id)
     bids = Bid.objects.filter(auction=current)
+    comments = Comment.objects.filter(auction=current)
     
     # Handle the case where there are multiple bids
     bid = None
@@ -114,17 +116,20 @@ def listings(request, id):
     return render(request, 'auctions/alllisting.html', {
         'auction': current,
         'user': request.user,
-        'bid': bid
+        'bid': bid,
+        'comments':comments
     })
 
 def update_bid(request, id):
     auction = get_object_or_404(all_listings, id=id)
-    
     if request.method == 'POST':
-        amount = request.POST.get('bid')
-        
+        amount = request.POST.get('bid') 
         if amount:
-            amount = int(amount)
+            try:
+                amount = int(amount)
+            except ValueError:
+                messages.error(request, 'Bid amount must be greater than current bid amount. Please try again with different amount.')
+                return redirect(reverse('listings', args=[id]))  # Redirect to the bidding page
             current_price = auction.currentprice
             starting_bid = auction.startingbid
             
@@ -134,23 +139,29 @@ def update_bid(request, id):
             if previous_bids.exists():
                 previous_bid = previous_bids.first()
                 previous_bid_amount = previous_bid.amount
-            # Handling the case where there are no previous bids
-            if previous_bid_amount is None or amount > previous_bid_amount:
-                if amount > current_price or (starting_bid and amount >= starting_bid):
-                    bid, created = Bid.objects.get_or_create(user=request.user, auction=auction)
-                    bid.amount = amount
-                    bid.save() 
-                    auction.bid_counter += 1
-                    auction.save()
-                    return HttpResponseRedirect(reverse('index'))
+            
+            try:
+                # Ensure the bid is valid
+                if previous_bid_amount is None or amount > previous_bid_amount:
+                    if amount >= current_price or (starting_bid and amount >= starting_bid):
+                        bid, created = Bid.objects.get_or_create(user=request.user, auction=auction)
+                        bid.amount = amount
+                        bid.save() 
+                        auction.bid_counter += 1
+                        auction.save()
+                        return HttpResponseRedirect(reverse('index'))
+                    else:
+                        raise ValidationError('Bid must be greater than  the current price or starting bid')
                 else:
                     raise ValidationError('Bid must be greater than the previous bid amount')
-            else:
-                raise ValidationError('Bid must be greater than or equal to the current price or starting bid')
+            except ValidationError as e:
+                messages.error(request, str(e) + 'Please try again with different amount')
+                return redirect(reverse('listings', args=[id]))
         else:
-            raise ValidationError('Bid amount is required')
-    else:
-        return HttpResponseRedirect(reverse('index'))
+            messages.error(request, 'Bid amount is required. Please try again with different amount')
+            return redirect(reverse('listings', args=[id]))  # Redirect to the bidding page
+
+    return redirect('index')
 
 @login_required(login_url='login')
 def watchlist(request):
@@ -220,13 +231,7 @@ def add_comment(request, id):
             'id': id,
             'comments':comments 
 
-        })
-    
-@login_required(login_url='login')
-def seecomments(request, id):
-    auction = get_object_or_404(all_listings, id=id)
-    comments = Comment.objects.filter(auction=auction)
-    return render(request, {'comments': comments})
+        })   
 
 @login_required(login_url='login')
 def closing_bid(request,id):
@@ -254,4 +259,14 @@ def category_list(request):
 
 def category_detail(request, category):
     listings = all_listings.objects.filter(category__iexact=category, active=True)
-    return render(request, 'auctions/category_detail.html', {'category': category, 'listings': listings})
+
+    # Attach the latest bid to each listing
+    for listing in listings:
+        # Get the latest bid for the current listing
+        latest_bid = Bid.objects.filter(auction=listing).order_by('-creation_time').first()
+        listing.latest_bid = latest_bid  # Attach the latest bid to the listing
+    
+    return render(request, 'auctions/category_detail.html', {
+        'category': category,
+        'listings': listings
+    })

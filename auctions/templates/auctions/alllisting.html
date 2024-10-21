@@ -17,7 +17,7 @@
         <div class="bid-info">
             {% if bid %}
                 <p><b>Starting Bid:</b> ${{ auction.starting_bid }}</p>
-                <p><b>Current Bid:</b> ${{ bid.amount }}</p>
+               
             {% else %}
                 <p><b>No bids yet</b></p>
             {% endif %}
@@ -74,7 +74,6 @@
         {% endif %}
         
         <h3 class="text-muted pt-3">Comments:</h3>
-        <a href="{% url 'seecomments' auction.id %}">See comments</a>
         {% for comment in comments %}
             <div class="card mb-3">
                 <div class="card-header">
@@ -84,7 +83,7 @@
                     <p class="card-text lead">{{ comment.text }}</p>
                 </div>
             </div>
-        {% empty %}
+        {%empty%}
             <p class="display-4 pb-5 ml-3">No comments for this auction yet.</p>
         {% endfor %}
     </div>
