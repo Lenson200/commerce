@@ -1,36 +1,40 @@
 {% extends "auctions/layout.html" %}
 {% load static %}
-
 {% block body %}
+<div class="auction-container">
     {% if auction.winner %}
         {% if user == auction.winner %}
             <h2>Highest bid - You are the winner!</h2>
         {% endif %}
     {% endif %}
-    <div class="sidebar col-lg-2 col-md-3">
-        <h1>{{ auction.title }}</h1>
-        <p>{{ auction.description }}</p>
-        <p><b>Author:</b> {{ auction.user.username }}</p>
-        <img src="{{ auction.imageurl }}" alt="{{ auction.title }}" style="width: 240px; height: 240px; object-fit: cover;">
-        {% if user.is_authenticated %}
+    
+    <h1 class="auction-title">{{ auction.title }}</h1>
+    <p class="auction-description">{{ auction.description }}</p>
+    <p><b>Author:</b> {{ auction.user.username }}</p>
+    <img src="{{ auction.imageurl }}" alt="{{ auction.title }}" class="auction-image">
+    
+    {% if user.is_authenticated %}
+        <div class="bid-info">
             {% if bid %}
-                <p><b>Starting Bid:</b> ${{ auction.starting_bid }}</p> 
-                <p><b>Current Bid:</b> ${{ bid.amount }}</p> 
+                <p><b>Starting Bid:</b> ${{ auction.starting_bid }}</p>
+                <p><b>Current Bid:</b> ${{ bid.amount }}</p>
             {% else %}
                 <p><b>No bids yet</b></p>
             {% endif %}
+            
             {% if auction.active %}
                 <form method="post" action="{% url 'update_bid' auction.id %}">
                     {% csrf_token %}
                     <input type="number" min="{{ auction.current_price }}" step="1" max="999999999999" name="bid" required>
-                    <button type="submit">Bid</button>   
+                    <button type="submit" class="btn">Bid</button>
                 </form>
             {% else %}
                 <p><b>Auction Closed</b></p>
             {% endif %}
-        {% endif %}
-    </div>
-    <div class="main col-lg-10 col-md-9">
+        </div>
+    {% endif %}
+    
+    <div class="auction-details">
         <p><b>Starting Price:</b> 
             {% if auction.current_price %}
                 ${{ auction.current_price }}
@@ -43,6 +47,7 @@
             <p><b>Last Updated:</b> {{ bid.creation_time|date:"F j, Y, g:i a" }}</p>
         {% endif %}
         <p><b>Category:</b> {{ auction.category|default:"Not Listed" }}</p>
+        
         {% if not auction.winner %}
             {% if bid %}
                 <p>{{ auction.bid_counter }} Bid(s) so far. Your bid is the current bid.</p>
@@ -51,16 +56,17 @@
             {% endif %}
         {% else %}
             {% if bid.user == user %}
-                <h3> Congratulations, you've won with a bid of ${{ bid.amount }}!</h3>
+                <h3>Congratulations, you've won with a bid of ${{ bid.amount }}!</h3>
             {% else %}
                 <p>Lot sold for ${{ bid.amount }}.</p>
             {% endif %}
         {% endif %}
+        
         {% if user == auction.user %}
             {% if auction.active %}
-                <form method="post" action="{% url 'closing_bid' auction.id %}"> 
+                <form method="post" action="{% url 'closing_bid' auction.id %}">
                     {% csrf_token %}
-                    <button type="submit">Close Bid</button>
+                    <button type="submit" class="btn">Close Bid</button>
                 </form>
             {% else %}
                 <p><b>Auction Closed</b></p>
@@ -79,14 +85,15 @@
                 </div>
             </div>
         {% empty %}
-            <p class="display-4 pb-5 ml-3">No comments for this auction yet.</p> 
+            <p class="display-4 pb-5 ml-3">No comments for this auction yet.</p>
         {% endfor %}
     </div>
-        <hr> 
-        <form action="{% url 'add_comment' auction.id %}" class="form-group" method="POST">
-            {% csrf_token %}
-            {{ form.as_p }}
-            <input class="btn btn-lg btn-outline-secondary" type="submit" value="Add comment">
-        </form>
-    </div>
+    
+    <hr> 
+    <form action="{% url 'add_comment' auction.id %}" class="form-group" method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <input class="btn btn-lg btn-outline-secondary" type="submit" value="Add comment">
+    </form>
+</div>
 {% endblock %}

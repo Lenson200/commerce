@@ -1,4 +1,4 @@
-
+{% extends "auctions/layout.html" %}
 {% block body %}
     {% if auction.winner is not None %}
         {% if user == bid.user %}

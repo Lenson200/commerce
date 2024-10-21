@@ -18,7 +18,6 @@ def index(request):
 
 def login_view(request):
     if request.method == "POST":
-        # Attempt to sign user in
         username = request.POST["username"]
         password = request.POST["password"]
         user = authenticate(request, username=username, password=password)
@@ -222,6 +221,7 @@ def add_comment(request, id):
             'comments':comments 
 
         })
+    
 @login_required(login_url='login')
 def seecomments(request, id):
     auction = get_object_or_404(all_listings, id=id)
