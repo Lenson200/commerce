@@ -1,5 +1,12 @@
 body {
     padding: 10px;
+    text-align: center;
+    font-size: 1rem;
+    align-items: center;
+    margin-right:5px;
+    justify-content: center;
+    
+    
 }
 .main {
     padding: 10px;
@@ -8,4 +15,14 @@ body {
     background-color: #f0f0f0;
     height: 100vh;
     padding: 20px;
+    display: flex;
+}
+.btn {
+    display: inline-block;
+    padding: 5px 20px;
+    background-color: #1d1f22; 
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    border-radius: 15px;
 }

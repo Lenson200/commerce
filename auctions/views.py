@@ -29,9 +29,10 @@ def login_view(request):
             # Redirect the user to the next URL if it exists
             next_url = request.GET.get('next')
             if next_url:
+                # Check if next_url is a valid path
                 return redirect(next_url)
             else:
-                return redirect('index')  # Redirect to index if next URL is not provided
+                return redirect('index')  # Default redirect if next URL is not provided
         else:
             return render(request, "auctions/login.html", {
                 "message": "Invalid username and/or password.",
@@ -39,6 +40,7 @@ def login_view(request):
             })
     else:
         return render(request, "auctions/login.html", {"next": request.GET.get("next")})
+
 
 
 def logout_view(request):
@@ -73,14 +75,14 @@ def register(request):
         return render(request, "auctions/register.html")
     
 
-@login_required(login_url='auctions/login.html')
+@login_required(login_url='login')
 def create_new(request):
     form=ListingForm()
     if request.method=='POST':
         form=ListingForm(request.POST)
     return render(request,"auctions/create.html",{'form':form})
 
-@login_required(login_url='auctions/login.html')
+@login_required(login_url='login')
 def adding(request):
     form=ListingForm(request.POST)
     if form.is_valid():
@@ -151,7 +153,7 @@ def update_bid(request, id):
     else:
         return HttpResponseRedirect(reverse('index'))
 
-@login_required(login_url='auctions/login.html')
+@login_required(login_url='login')
 def watchlist(request):
     
     try:
@@ -163,7 +165,7 @@ def watchlist(request):
 
     return render(request, "auctions/watchlist.html", {"watchlist": watchlist_items})
   
-@login_required(login_url='auctions/login.html')
+@login_required(login_url='login')
 def add_watch(request, id):
     auction = get_object_or_404(all_listings, id=id)
     watchlist, created = WatchList.objects.get_or_create(user=request.user)   
@@ -174,7 +176,7 @@ def add_watch(request, id):
     watchlist.save()  
     return HttpResponseRedirect(reverse('index')) 
 
-@login_required(login_url='auctions/login.html')
+@login_required(login_url='login')
 def unwatch(request, id):
     auction = get_object_or_404(all_listings, id=id)
     watchlist = WatchList.objects.filter(user=request.user).first()
@@ -220,13 +222,13 @@ def add_comment(request, id):
             'comments':comments 
 
         })
-@login_required(login_url='auctions/login.html')
+@login_required(login_url='login')
 def seecomments(request, id):
     auction = get_object_or_404(all_listings, id=id)
     comments = Comment.objects.filter(auction=auction)
     return render(request, {'comments': comments})
 
-@login_required(login_url='auctions/login.html')
+@login_required(login_url='login')
 def closing_bid(request,id):
     auction=get_object_or_404(all_listings, id=id)
     if request.user == auction.user:

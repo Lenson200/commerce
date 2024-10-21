@@ -1,3 +1,4 @@
+{% extends "auctions/layout.html" %}
 {% block body %}
     <h2>Watchlist</h2>
     {% if watchlist %}
@@ -37,4 +38,5 @@
     {% else %}
         <h3>NO ITEM ON THE WATCHLIST</h3>
     {% endif %}
+    <a href="{% url 'index' %}" class="btn">HOME</a>
 {% endblock %}
