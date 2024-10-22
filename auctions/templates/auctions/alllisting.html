@@ -16,7 +16,7 @@
     {% if user.is_authenticated %}
         <div class="bid-info">
             {% if bid %}
-                <p><b>Starting Bid:</b> ${{ auction.starting_bid }}</p>
+                <p><b>Starting Bid:</b> ${{ auction.startingbid}}</p>
                 <p><b>Current Bid:</b> ${{ bid.amount }}</p>
             {% else %}
                 <p><b>No bids yet</b></p>
@@ -74,7 +74,6 @@
         {% endif %}
         
         <h3 class="text-muted pt-3">Comments:</h3>
-        <a href="{% url 'seecomments' auction.id %}">See comments</a>
         {% for comment in comments %}
             <div class="card mb-3">
                 <div class="card-header">

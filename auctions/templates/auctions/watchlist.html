@@ -4,11 +4,11 @@
 <div class="main">
     {% if watchlist %}
         {% for item in watchlist %}
-            <div class="media-body d-flex align-items-start"> <!-- Added d-flex for flexbox layout -->
+            <div class="media-body d-flex align-items-start">
                 <a class="image" href="{% url 'listings' id=item.id %}">
                     <img src="{{ item.imageurl }}" class="item-image">
                 </a>
-                <div class="item-details"> <!-- Adjusted to be next to the image -->
+                <div class="item-details"> 
                     <h3><a href="{% url 'listings' id=item.id %}">{{ item.title }}</a></h3>
                     <div class="font-size-sm mb-1">
                         <span class="text-muted mr-2">Description:</span>{{ item.description }}

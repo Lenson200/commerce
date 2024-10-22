@@ -18,7 +18,6 @@ urlpatterns = [
     path("unwatch/<int:id>", views.unwatch, name="unwatch"),
     path("<int:id>", views.closing_bid, name="closing_bid"),
     path("comments/<int:id>", views.add_comment, name="add_comment"),
-    path('comments/<int:id>', views.seecomments, name='seecomments'),
     path('categories/',views.category_list, name='category_list'),
     path('category/<str:category>/', views.category_detail, name='category_detail'),
 ]
