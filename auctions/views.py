@@ -77,31 +77,46 @@ def register(request):
 # renders the listing creation form 
 @login_required(login_url='login')
 def create_new(request):
-    form=ListingForm()
-    if request.method=='POST':
-        form=ListingForm(request.POST)
-    return render(request,"auctions/create.html",{'form':form})
+    form = ListingForm()
+    
+    if request.method == 'POST':
+        form = ListingForm(request.POST)  
+        if form.is_valid():
+            auction = all_listings(user=request.user, **form.cleaned_data)
+            auction.save()
+            return redirect('index')  
+
+    return render(request, "auctions/create.html", {'form': form})
 
 #allows user to save the listing
-@login_required(login_url='login')
 def adding(request):
-    form=ListingForm(request.POST)
-    if form.is_valid():
-        auction=all_listings(user=request.user,**form.cleaned_data)
-        if not auction.imageurl:
-            auction.imageurl=""
-        auction.save()
-        startingbid=auction.startingbid
-        bid=Bid(amount=startingbid,user=request.user,auction=auction)
-        bid.save()
-        print("auction:"+auction.imageurl)
-        return HttpResponseRedirect(reverse('index'))
+    if request.method == 'POST':
+        form = ListingForm(request.POST)
+
+        if form.is_valid():
+            auction = all_listings(user=request.user, **form.cleaned_data)
+            auction.imageurl = auction.imageurl or ""  # Default to empty string if no image URL
+            auction.save()
+            
+            # Create the initial bid using the starting bid amount
+            starting_bid = auction.startingbid
+            if starting_bid:  # Ensure starting bid is valid before creating a Bid
+                bid = Bid(amount=starting_bid, user=request.user, auction=auction)
+                bid.save()
+            
+            print("Auction Image URL:", auction.imageurl)
+            return HttpResponseRedirect(reverse('index'))
+        else:
+            # If the form is not valid, re-render the page with errors
+            return render(request, "auctions/create.html", {
+                'form': form,
+                'error': form.errors
+            })
     else:
-        return render(request,"auctions/create.html",{
-            'form':form,
-            'error':form.errors
-        })
-    
+        form = ListingForm()  # Initialize a new form if the request method is not POST
+
+    return render(request, "auctions/create.html", {'form': form})
+
 #renders all listings  that are active
 def listings(request, id):
     current = get_object_or_404(all_listings, pk=id)
