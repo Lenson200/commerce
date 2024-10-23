@@ -2,6 +2,8 @@
 
 {% block body %}
     <h1>{{ category }}</h1>
+    
+    
     <ul>
         {% for listing in listings %}
             <li>
@@ -15,4 +17,5 @@
             </li>
         {% endfor %}
     </ul>
+    <div class="btn"><a href="{% url 'index' %}" class="btn">HOME</a></div>
 {% endblock %}

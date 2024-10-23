@@ -28,9 +28,14 @@ class WatchList(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     watchlist_counter = models.IntegerField(default=0, blank=True)
     watchlist_items = models.ManyToManyField(all_listings, related_name='watchlist_items', blank=True)
-    
+    listing = models.ForeignKey(all_listings, on_delete=models.CASCADE, related_name='watchlists', null=True)
+    added_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        unique_together = ('user', 'listing')
+
     def __str__(self):
-        return f"Watchlist for {self.user.username} "
+        return f"{self.user.username} watching {self.listing.title}"
 
 class Bid(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)

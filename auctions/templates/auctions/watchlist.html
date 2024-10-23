@@ -3,8 +3,8 @@
 <h2>Watchlist</h2>
 <div class="main">
     {% if watchlist %}
-        {% for item in watchlist %}
-            <div class="media-body d-flex align-items-start">
+        {% for item in watchlist%}
+            <div class="media-body d-flex align-items-start">   
                 <a class="image" href="{% url 'listings' id=item.id %}">
                     <img src="{{ item.imageurl }}" class="item-image">
                 </a>

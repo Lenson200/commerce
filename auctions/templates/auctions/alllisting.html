@@ -2,6 +2,7 @@
 {% load static %}
 {% block body %}
 <div class="auction-container">
+    
     {% if auction.winner %}
         {% if user == auction.winner %}
             <h2>Highest bid - You are the winner!</h2>
@@ -94,5 +95,6 @@
         {{ form.as_p }}
         <input class="btn btn-lg btn-outline-secondary" type="submit" value="Add comment">
     </form>
+    <a href="{% url 'index' %}" class="btn">HOME</a>
 </div>
 {% endblock %}

@@ -167,58 +167,40 @@ def update_bid(request, id):
 
 @login_required(login_url='login')
 def watchlist(request):
-    try:
-        watchlist = WatchList.objects.get(user=request.user)
-        watchlist_items = watchlist.watchlist_items.all()
-    except WatchList.DoesNotExist:
-        watchlist_items = []
-
+    watchlist_items = WatchList.objects.filter(user=request.user)
     return render(request, "auctions/watchlist.html", {"watchlist": watchlist_items})
 
-    
 @login_required(login_url='login')
 def add_watch(request, id):
     auction = get_object_or_404(all_listings, id=id)
-    watchlist, created = WatchList.objects.get_or_create(user=request.user)
-
-    if auction in watchlist.watchlist_items.all():
-        return JsonResponse({'status': 'already_added'}, status=400)
-
-    watchlist.watchlist_items.add(auction)
-    watchlist.watchlist_counter += 1
-    watchlist.save()
-
-    if request.is_ajax():
-        return JsonResponse({'status': 'success'})
-    else:
-        return HttpResponseRedirect(reverse('index'))
-
-@login_required(login_url='login')
-def add_watch(request, id):
-    auction = get_object_or_404(all_listings, id=id)
-    watchlist, created = WatchList.objects.get_or_create(user=request.user)
-
-    if auction not in watchlist.watchlist_items.all():
-        watchlist.watchlist_items.add(auction)
-        watchlist.watchlist_counter += 1
-        watchlist.save()
-        return HttpResponseRedirect(reverse('index'))
-    return HttpResponseRedirect(reverse('index'))
+    watchlist, created = WatchList.objects.get_or_create(user=request.user, listing=auction)
+    if created:
+        return HttpResponseRedirect(reverse('index'))  
+    return HttpResponseRedirect(reverse('index'))  
 
 @login_required(login_url='login')
 def unwatch(request, id):
     auction = get_object_or_404(all_listings, id=id)
-    watchlist = WatchList.objects.filter(user=request.user).first()
+    watchlist = WatchList.objects.filter(user=request.user, listing=auction).first()
+    if watchlist:
+        watchlist.delete()
+    
+    return HttpResponseRedirect(reverse('index'))
 
-    if watchlist and auction in watchlist.watchlist_items.all():
-        watchlist.watchlist_items.remove(auction)
-        watchlist.watchlist_counter -= 1
-        watchlist.save()
-    # This lines checks for request source and redirects accordingly
-    if '/unwatch/' in request.path:
-        return HttpResponseRedirect(reverse('index'))
-    else:
-        return HttpResponseRedirect(reverse('watchlist'))
+# @login_required(login_url='login')
+# def unwatch(request, id):
+#     auction = get_object_or_404(all_listings, id=id)
+#     watchlist = WatchList.objects.filter(user=request.user).first()
+
+#     if watchlist and auction in watchlist.watchlist_items.all():
+#         watchlist.watchlist_items.remove(auction)
+#         watchlist.watchlist_counter -= 1
+#         watchlist.save()
+#     # This lines checks for request source and redirects accordingly
+#     if '/unwatch/' in request.path:
+#         return HttpResponseRedirect(reverse('index'))
+#     else:
+#         return HttpResponseRedirect(reverse('watchlist'))
     
     
 def add_comment(request, id):
