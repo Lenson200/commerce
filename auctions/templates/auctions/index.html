@@ -1,13 +1,12 @@
 {% extends "auctions/layout.html" %}
 {% load static %}
-
 {% block body %}
 <div class="container">
     <h2 class="mt-4">Active Listings</h2>
 
     <ul class="list-group">
         {% for listing in listing_list %}
-            <li class="list-group-item">
+            <li class="list-group-item" data-id="{{ listing.id }}">
                 <a href="{% url 'listings' id=listing.id %}?next={{ request.path }}">
                     <strong>{{ listing.title }}</strong><br>
                     Description: {{ listing.description }}
@@ -16,56 +15,125 @@
                     {% endif %}
                 </a>
                 <br>
+    
                 {% if not listing.active %}
                     <p class="closed-listing">This listing is closed.</p>
                 {% elif listing.winner %}
                     <p class="winner-listing">This listing has a winner: {{ listing.winner }}</p>
                 {% else %}
-                    {% if listing.bid_set.exists %}
-                        {% with listing.bid_set.first as bid %}
-                            <p><b>Starting Bid:</b> ${{ bid.auction.startingbid }}</p>
-                            <p><b>Current Bid:</b> ${{ bid.amount }}</p>
-                        {% endwith %}
+                    <p><b>Starting Bid:</b> ${{ listing.startingbid }}</p>
+    
+                    {% if listing.latest_bid %}
+                        <p><b>Current Bid:</b> ${{ listing.latest_bid.amount }}</p>
                     {% else %}
-                        <p><b>Starting Bid:</b> ${{ listing.startingbid }}</p>
                         <p><b>Current Price:</b> ${{ listing.currentprice }}</p>
                     {% endif %}
+    
                     <p><b>Category:</b> {{ listing.category }}</p>
+    
                     {% if request.user.is_authenticated %}
-                        <a href="{% url 'add_watch' id=listing.id %}" class="btn add-to-watchlist" onclick="addToWatchlist(this)">Add to Watchlist</a>
-                        <a href="{% url 'unwatch' id=listing.id %}" class="btn remove-from-watchlist" onclick="removeFromWatchlist(this)">Remove from Watchlist</a>
+                    <div class="watchlist-buttons" data-id="{{ listing.id }}">
+                    <a href="{% url 'add_watch' id=listing.id %}" data-id="{{ listing.id }}" class="btn add-to-watchlist">Add to Watchlist</a>
+                    <a href="{% url 'unwatch' id=listing.id %}" data-id="{{ listing.id }}" class="btn remove-from-watchlist">Remove from Watchlist</a>
+                   </div>
                     {% endif %}
+                
                 {% endif %}
             </li>
         {% endfor %}
-    </ul>
-    
-    <div id="notificationArea" style="position: fixed; top: 10px; right: 30px; background-color: blue;"></div>
+    </ul>    
+  
+    <div id="notificationArea" style="position: fixed; top: 10px; right: 30px; background-color: rgb(21, 115, 191);"></div>
 </div>
 
-    <script>
-        function addToWatchlist(button) {
-            button.disabled = true;
-            button.style.backgroundColor = "red";
-            showNotification("Item added to watchlist");
-        }
+<script>
+   document.addEventListener("DOMContentLoaded", function() {
+    const notificationArea = document.getElementById('notificationArea');
 
-        function removeFromWatchlist(button) {
-            button.disabled = true;
-            button.style.backgroundColor = "black";
-            showNotification("Item removed from watchlist");
-        }
+    function showNotification(message) {
+        notificationArea.innerText = message;
+        notificationArea.style.display = 'block';
+        setTimeout(() => {
+            notificationArea.style.display = 'none';
+        }, 6000);
+    }
+    document.querySelectorAll('.watchlist-buttons').forEach(buttonContainer => {
+        const itemId = buttonContainer.dataset.id;
 
-        function showNotification(message) {
-            var notificationArea = document.getElementById('notificationArea');
-            var notification = document.createElement('div');
-            notification.textContent = message;
-            notification.className = 'notification';
-            notificationArea.appendChild(notification);
-            setTimeout(function() {
-                notificationArea.removeChild(notification);
-            }, 8000);
+        fetch(`/watchlist-status/${itemId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.is_in_watchlist) {
+                buttonContainer.querySelector('.remove-from-watchlist').style.display = 'inline-block';
+                buttonContainer.querySelector('.add-to-watchlist').style.display = 'none';
+            } else {
+                buttonContainer.querySelector('.add-to-watchlist').style.display = 'inline-block';
+                buttonContainer.querySelector('.remove-from-watchlist').style.display = 'none';
+            }
+        });
+    });
+    document.querySelectorAll('.add-to-watchlist').forEach(button => {
+        button.addEventListener('click', function(event) {
+            event.preventDefault();
+            const itemId = this.dataset.id;
+
+            fetch(`/watch/${itemId}/`, { 
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                showNotification(data.message);
+                this.style.display = 'none';
+                this.nextElementSibling.style.display = 'inline-block'; 
+            })
+            .catch(() => {
+                showNotification('Failed to add to watchlist.');
+            });
+        });
+    });
+
+    document.querySelectorAll('.remove-from-watchlist').forEach(button => {
+        button.addEventListener('click', function(event) {
+            event.preventDefault();
+            const itemId = this.dataset.id;
+
+            fetch(`/unwatch/${itemId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                showNotification(data.message);
+                this.style.display = 'none';
+                this.previousElementSibling.style.display = 'inline-block'; 
+            })
+            .catch(() => {
+                showNotification('Failed to remove from watchlist.');
+            });
+        });
+    });
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
         }
-    </script>
+        return cookieValue;
+    }
+});
+
+</script>
 </div>
 {% endblock %}

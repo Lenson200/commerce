@@ -2,20 +2,20 @@
 
 {% block body %}
     <h1>{{ category }}</h1>
+    
+    
     <ul>
         {% for listing in listings %}
-        {% if listing.bid_set.exists %}
-        {% with listing.bid_set.first as bid %}
-            <a href="">
+            <li>
                 <img src="{{ listing.imageurl }}" style="width: 240px; height: 240px; object-fit: cover;">
-                <li>{{ listing.title }}</li>
-                <p><b>Current Bid:</b> ${{ bid.amount }}</p>
-                {% endwith %}
+                <p>{{ listing.title }}</p>
+                {% if listing.latest_bid %}
+                    <p><b>Current Bid:</b> ${{ listing.latest_bid.amount }}</p>
                 {% else %}
-                <p><b>Current Price:</b> ${{ listing.currentprice }}</p> 
+                    <p><b>Starting Price:</b> ${{ listing.currentprice }}</p>
                 {% endif %}
-            </a>
-             
+            </li>
         {% endfor %}
     </ul>
+    <div class="btn"><a href="{% url 'index' %}" class="btn">HOME</a></div>
 {% endblock %}

@@ -2,21 +2,20 @@
 {% load static %}
 {% block body %}
 <div class="auction-container">
-    {% if auction.winner %}
-        {% if user == auction.winner %}
-            <h2>Highest bid - You are the winner!</h2>
-        {% endif %}
-    {% endif %}
     
+    {% if is_winner %}
+        <h2>Congratulations!!Highest bidder - You are the winner!</h2>
+        {%else%}
+        <p>Lot sold for ${{ bid.amount }}.</p>
+    {% endif %}
     <h1 class="auction-title">{{ auction.title }}</h1>
     <p class="auction-description">{{ auction.description }}</p>
     <p><b>Author:</b> {{ auction.user.username }}</p>
-    <img src="{{ auction.imageurl }}" alt="{{ auction.title }}" class="auction-image">
-    
+    <img src="{{ auction.imageurl }}" alt="{{ auction.title }}" class="auction-image"> 
     {% if user.is_authenticated %}
         <div class="bid-info">
             {% if bid %}
-                <p><b>Starting Bid:</b> ${{ auction.starting_bid }}</p>
+                <p><b>Starting Bid:</b> ${{ auction.startingbid}}</p>
                 <p><b>Current Bid:</b> ${{ bid.amount }}</p>
             {% else %}
                 <p><b>No bids yet</b></p>
@@ -32,36 +31,23 @@
                 <p><b>Auction Closed</b></p>
             {% endif %}
         </div>
-    {% endif %}
-    
+    {% endif %}   
     <div class="auction-details">
         <p><b>Starting Price:</b> 
-            {% if auction.current_price %}
-                ${{ auction.current_price }}
-            {% else %}
-                Not Specified
-            {% endif %}
+         ${{ bid.amount }}(Your bid must be greater than this amount.)
         </p>
         <p><b>Created at:</b> {{ auction.creation_time|date:"F j, Y, g:i a" }}</p>
         {% if bid %}
             <p><b>Last Updated:</b> {{ bid.creation_time|date:"F j, Y, g:i a" }}</p>
         {% endif %}
         <p><b>Category:</b> {{ auction.category|default:"Not Listed" }}</p>
-        
-        {% if not auction.winner %}
+      
             {% if bid %}
-                <p>{{ auction.bid_counter }} Bid(s) so far. Your bid is the current bid.</p>
+                <p>{{ auction.bid_counter }} Bids so far</p>
             {% else %}
                 <p>No bids yet.</p>
             {% endif %}
-        {% else %}
-            {% if bid.user == user %}
-                <h3>Congratulations, you've won with a bid of ${{ bid.amount }}!</h3>
-            {% else %}
-                <p>Lot sold for ${{ bid.amount }}.</p>
-            {% endif %}
-        {% endif %}
-        
+
         {% if user == auction.user %}
             {% if auction.active %}
                 <form method="post" action="{% url 'closing_bid' auction.id %}">
@@ -72,9 +58,8 @@
                 <p><b>Auction Closed</b></p>
             {% endif %}
         {% endif %}
-        
+   
         <h3 class="text-muted pt-3">Comments:</h3>
-        <a href="{% url 'seecomments' auction.id %}">See comments</a>
         {% for comment in comments %}
             <div class="card mb-3">
                 <div class="card-header">
@@ -95,5 +80,6 @@
         {{ form.as_p }}
         <input class="btn btn-lg btn-outline-secondary" type="submit" value="Add comment">
     </form>
+    <a href="{% url 'index' %}" class="btn">HOME</a>
 </div>
 {% endblock %}
