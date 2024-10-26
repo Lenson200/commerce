@@ -32,9 +32,12 @@
                     <p><b>Category:</b> {{ listing.category }}</p>
     
                     {% if request.user.is_authenticated %}
-                        <a href="{% url 'add_watch' id=listing.id %}" class="btn add-to-watchlist">Add to Watchlist</a>
-                        <a href="{% url 'unwatch' id=listing.id %}" class="btn remove-from-watchlist">Remove from Watchlist</a>
+                    <div class="watchlist-buttons" data-id="{{ listing.id }}">
+                    <a href="{% url 'add_watch' id=listing.id %}" data-id="{{ listing.id }}" class="btn add-to-watchlist">Add to Watchlist</a>
+                    <a href="{% url 'unwatch' id=listing.id %}" data-id="{{ listing.id }}" class="btn remove-from-watchlist">Remove from Watchlist</a>
+                   </div>
                     {% endif %}
+                
                 {% endif %}
             </li>
         {% endfor %}
@@ -44,107 +47,93 @@
 </div>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const addButtons = document.querySelectorAll('.add-to-watchlist');
-        const removeButtons = document.querySelectorAll('.remove-from-watchlist');
-        const notificationArea = document.getElementById('notificationArea');
+   document.addEventListener("DOMContentLoaded", function() {
+    const notificationArea = document.getElementById('notificationArea');
 
-        // Function to display notifications
-        function showNotification(message) {
-            notificationArea.innerText = message;
-            notificationArea.style.display = 'block';
-            setTimeout(() => {
-                notificationArea.style.display = 'none';
-            }, 6000);
-        }
+    function showNotification(message) {
+        notificationArea.innerText = message;
+        notificationArea.style.display = 'block';
+        setTimeout(() => {
+            notificationArea.style.display = 'none';
+        }, 6000);
+    }
+    document.querySelectorAll('.watchlist-buttons').forEach(buttonContainer => {
+        const itemId = buttonContainer.dataset.id;
 
-        // Helper function to check if item is in the watchlist
-        function isInWatchlist(itemId) {
-            return localStorage.getItem('watchlist') && JSON.parse(localStorage.getItem('watchlist')).includes(itemId);
-        }
-
-        addButtons.forEach(button => {
-            button.addEventListener('click', function(event) {
-                event.preventDefault();
-                const itemId = this.closest('li').dataset.id;
-
-                this.style.display = 'none';
-
-                fetch(this.href, { method: 'GET' })  
-                    .then(response => {
-                        if (response.ok) {
-                            let watchlist = localStorage.getItem('watchlist') ? JSON.parse(localStorage.getItem('watchlist')) : [];
-                            watchlist.push(itemId);
-                            localStorage.setItem('watchlist', JSON.stringify(watchlist));
-
-                            // Show notification
-                            showNotification('Item Added to watchlist!');
-
-                            // Enable the remove button, if it exists
-                            if (this.nextElementSibling) {
-                                this.nextElementSibling.style.display = 'inline-block';
-                            }
-                        }
-                    })
-                    .catch(() => {
-                        // In case of an error, make the button visible again
-                        this.style.display = 'inline-block';
-                        showNotification('Failed to add to watchlist.');
-                    });
-            });
-        });
-
-        // Add click event listeners to remove-from-watchlist buttons
-        removeButtons.forEach(button => {
-            button.addEventListener('click', function(event) {
-                event.preventDefault();
-                const itemId = this.closest('li').dataset.id;
-
-                // Hide the button immediately
-                this.style.display = 'none';
-
-                fetch(this.href, { method: 'GET' })
-                    .then(response => {
-                        if (response.ok) {
-                            let watchlist = JSON.parse(localStorage.getItem('watchlist')) || [];
-                            watchlist = watchlist.filter(id => id !== itemId);
-                            localStorage.setItem('watchlist', JSON.stringify(watchlist));
-
-                            // Show notification
-                            showNotification('Removed from watchlist!');
-
-                            // Enable the add button, if it exists
-                            if (this.previousElementSibling) {
-                                this.previousElementSibling.style.display = 'inline-block';
-                            }
-                        }
-                    })
-                    .catch(() => {
-                        // In case of an error, make the button visible again
-                        this.style.display = 'inline-block';
-                        showNotification('Failed to remove from watchlist.');
-                    });
-            });
-        });
-
-        // On page load, check the status of each item and render the buttons appropriately
-        document.querySelectorAll('.list-group-item').forEach(item => {
-            const itemId = item.dataset.id;
-            const addButton = item.querySelector('.add-to-watchlist');
-            const removeButton = item.querySelector('.remove-from-watchlist');
-
-            // Check if the buttons exist before trying to modify their display state
-            if (addButton && removeButton) {
-                if (isInWatchlist(itemId)) {
-                    addButton.style.display = 'none';
-                    removeButton.style.display = 'inline-block';
-                } else {
-                    addButton.style.display = 'inline-block';
-                    removeButton.style.display = 'none';
-                }
+        fetch(`/watchlist-status/${itemId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.is_in_watchlist) {
+                buttonContainer.querySelector('.remove-from-watchlist').style.display = 'inline-block';
+                buttonContainer.querySelector('.add-to-watchlist').style.display = 'none';
+            } else {
+                buttonContainer.querySelector('.add-to-watchlist').style.display = 'inline-block';
+                buttonContainer.querySelector('.remove-from-watchlist').style.display = 'none';
             }
         });
     });
+    document.querySelectorAll('.add-to-watchlist').forEach(button => {
+        button.addEventListener('click', function(event) {
+            event.preventDefault();
+            const itemId = this.dataset.id;
+
+            fetch(`/watch/${itemId}/`, { 
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                showNotification(data.message);
+                this.style.display = 'none';
+                this.nextElementSibling.style.display = 'inline-block'; 
+            })
+            .catch(() => {
+                showNotification('Failed to add to watchlist.');
+            });
+        });
+    });
+
+    document.querySelectorAll('.remove-from-watchlist').forEach(button => {
+        button.addEventListener('click', function(event) {
+            event.preventDefault();
+            const itemId = this.dataset.id;
+
+            fetch(`/unwatch/${itemId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                showNotification(data.message);
+                this.style.display = 'none';
+                this.previousElementSibling.style.display = 'inline-block'; 
+            })
+            .catch(() => {
+                showNotification('Failed to remove from watchlist.');
+            });
+        });
+    });
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+
 </script>
 </div>
 {% endblock %}

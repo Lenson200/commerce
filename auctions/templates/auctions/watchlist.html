@@ -2,40 +2,42 @@
 {% block body %}
 <h2>Watchlist</h2>
 <div class="main">
+    
     {% if watchlist %}
-        {% for item in watchlist%}
+    {% for item in watchlist %}
             <div class="media-body d-flex align-items-start">   
-                <a class="image" href="{% url 'listings' id=item.id %}">
-                    <img src="{{ item.imageurl }}" class="item-image">
+                <a class="image" href="{% url 'listings' id=item.listing.id %}">
+                    <img src="{{ item.listing.imageurl }}" class="item-image" alt="{{ item.title }}">
                 </a>
                 <div class="item-details"> 
-                    <h3><a href="{% url 'listings' id=item.id %}">{{ item.title }}</a></h3>
+                    <h3><a href="{% url 'listings' id=item.listing.id %}">{{ item.listing.title }}</a></h3>
                     <div class="font-size-sm mb-1">
-                        <span class="text-muted mr-2">Description:</span>{{ item.description }}
+                        <span class="text-muted mr-2">Description:</span>{{ item.listing.description }}
                     </div>
                     <div class="font-size-sm mb-1">
-                        <span class="text-muted mr-2">Author:</span>{{ item.user }}
+                        <span class="text-muted mr-2">Author:</span>{{ item.listing.user }}
                     </div>
                     <div class="font-size-sm mb-1">
                         <span class="text-muted mr-2">Category:</span>
-                        {{ item.category | default:"Not listed." | title }}
+                        {{ item.listing.category | default:"Not listed." | title }}
                     </div>
                     <div class="font-size-sm mb-1">
                         <span class="text-muted mr-2">Starting Bid:</span>
-                        {% if item.startingbid %}${{ item.startingbid }}{% else %}Not specified{% endif %}
+                        {% if item.listing.startingbid %}${{ item.listing.startingbid }}{% else %}Not specified{% endif %}
                     </div>
                     <div class="font-size-lg mb-1">
                         <span class="text-muted mr-2">Eligibility Status:</span>
-                        {% if item.winner == None %}
+                        {% if item.listing.winner == None %}
                             <span class="text-primary">Available</span>
                         {% else %}
                             <span class="text-danger">Lot Sold</span>
                         {% endif %}
                     </div>
-                    <span class="text-muted">Created {{ item.creation_time }}</span>
+                    <span class="text-muted">Created {{ item.listing.creation_time }}</span>
                     <a class="text-danger" href=""><i class="fa fa-heart"></i></a>
                 </div>
             </div>
+            
         {% endfor %}
     {% else %}
         <h3>NO ITEM ON THE WATCHLIST</h3>

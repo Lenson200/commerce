@@ -10,11 +10,15 @@ from django.urls import reverse
 from .forms import ListingForm,CommentForm
 from django.shortcuts import redirect
 from .models import User,all_listings,Bid,WatchList,Comment
+
 def index(request):
-    listing_list = all_listings.objects.all()  # Correct variable name
-    for listing in listing_list:  # Use listing_list here, not listings
-        # Attach the latest bid to each listing
-        listing.latest_bid = Bid.objects.filter(auction=listing).order_by('-creation_time').first()
+    listing_list = all_listings.objects.all()
+    for listing in listing_list: 
+        listing.latest_bid = Bid.objects.filter(auction=listing,).order_by('-creation_time').first()
+    return render(request, "auctions/index.html", {"listing_list": listing_list})
+
+def active_listings(request):
+    listing_list = all_listings.objects.filter(active=True)
     return render(request, "auctions/index.html", {"listing_list": listing_list})
 
 def login_view(request):
@@ -95,12 +99,12 @@ def adding(request):
 
         if form.is_valid():
             auction = all_listings(user=request.user, **form.cleaned_data)
-            auction.imageurl = auction.imageurl or ""  # Default to empty string if no image URL
+            auction.imageurl = auction.imageurl or "" 
             auction.save()
             
             # Create the initial bid using the starting bid amount
             starting_bid = auction.startingbid
-            if starting_bid:  # Ensure starting bid is valid before creating a Bid
+            if starting_bid:
                 bid = Bid(amount=starting_bid, user=request.user, auction=auction)
                 bid.save()
             
@@ -113,7 +117,7 @@ def adding(request):
                 'error': form.errors
             })
     else:
-        form = ListingForm()  # Initialize a new form if the request method is not POST
+        form = ListingForm()  
 
     return render(request, "auctions/create.html", {'form': form})
 
@@ -121,18 +125,18 @@ def adding(request):
 def listings(request, id):
     current = get_object_or_404(all_listings, pk=id)
     bids = Bid.objects.filter(auction=current)
+    is_winner = current.winner == request.user.username
     comments = Comment.objects.filter(auction=current)    
     # Handle the case where there are multiple bids
     bid = None
     if bids.exists():
         bid = bids.latest('creation_time')
-    
-    print("here:" + current.imageurl)
     return render(request, 'auctions/alllisting.html', {
         'auction': current,
         'user': request.user,
         'bid': bid,
-        'comments':comments
+        'comments':comments,
+        'is_winner': is_winner
     })
 
 @login_required
@@ -167,42 +171,35 @@ def update_bid(request, id):
 
 @login_required(login_url='login')
 def watchlist(request):
-    watchlist_items = WatchList.objects.filter(user=request.user)
-    return render(request, "auctions/watchlist.html", {"watchlist": watchlist_items})
+    watchlist_items = WatchList.objects.filter(user=request.user,listing__active=True) 
+    return render(request, "auctions/watchlist.html", {"watchlist":watchlist_items})
 
 @login_required(login_url='login')
 def add_watch(request, id):
     auction = get_object_or_404(all_listings, id=id)
     watchlist, created = WatchList.objects.get_or_create(user=request.user, listing=auction)
-    if created:
-        return HttpResponseRedirect(reverse('index'))  
-    return HttpResponseRedirect(reverse('index'))  
+    
+    if request.method == "POST":
+        return JsonResponse({'created': created, 'message': 'Item added to watchlist' if created else 'Item already in watchlist'})
+
+    return HttpResponseRedirect(reverse('index'))
 
 @login_required(login_url='login')
 def unwatch(request, id):
     auction = get_object_or_404(all_listings, id=id)
     watchlist = WatchList.objects.filter(user=request.user, listing=auction).first()
+    
     if watchlist:
         watchlist.delete()
-    
+        if request.method == "POST":
+            return JsonResponse({'message': 'Removed from watchlist'})
+
     return HttpResponseRedirect(reverse('index'))
+@login_required
+def check_watchlist_status(request, item_id):
+    is_in_watchlist = WatchList.objects.filter(user=request.user, listing_id=item_id).exists()
+    return JsonResponse({'is_in_watchlist': is_in_watchlist})
 
-# @login_required(login_url='login')
-# def unwatch(request, id):
-#     auction = get_object_or_404(all_listings, id=id)
-#     watchlist = WatchList.objects.filter(user=request.user).first()
-
-#     if watchlist and auction in watchlist.watchlist_items.all():
-#         watchlist.watchlist_items.remove(auction)
-#         watchlist.watchlist_counter -= 1
-#         watchlist.save()
-#     # This lines checks for request source and redirects accordingly
-#     if '/unwatch/' in request.path:
-#         return HttpResponseRedirect(reverse('index'))
-#     else:
-#         return HttpResponseRedirect(reverse('watchlist'))
-    
-    
 def add_comment(request, id):
     if not request.user.is_authenticated:
         return render(request, 'auctions/login.html', {
@@ -264,7 +261,6 @@ def category_list(request):
 def category_detail(request, category):
     listings = all_listings.objects.filter(category__iexact=category, active=True)
     for listing in listings:
-        # Get the latest bid for the current listing
         latest_bid = Bid.objects.filter(auction=listing).order_by('-creation_time').first()
         listing.latest_bid = latest_bid  
     
